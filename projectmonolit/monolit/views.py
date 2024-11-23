@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
+from prompt_toolkit.validation import ValidationError
 
 from .forms import ProfileForm, RegistrationForm, UserUpdate, ProfileUpdate, PostForm, AnswerOptionFormSet
 from .models import Profile, Post, Vote, AnswerOption
@@ -111,6 +112,10 @@ def create_post(request):
 
 @login_required
 def post_detail(request, post_id):
+    user = request.user
+    if not user:
+        messages.error(request, 'Сначала войдите в систему, что бы голосовать')
+        return redirect('home')
     post = get_object_or_404(Post, id=post_id)
     print(post)
     answer_options = post.answer_options.all()
