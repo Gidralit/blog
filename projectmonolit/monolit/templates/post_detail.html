@@ -1,25 +1,43 @@
-{% extends 'home.html' %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
+{% extends "home.html" %}
 {% block content %}
-<body>
-  <h1>{{ post.title }}</h1>
-  <p>{{ post.description }}</p>
-  {% if post.image %}
-    <img src="{{ post.image.url }}" alt="Post Image" width="150px">
+<h2>{{post.title}}</h2>
+<p>Автор {{post.user.username}}</p>
+{% if request.user == post.user %}
+<a href="{% url 'edit_post' post.id %}">Редактировать пост</a>
+<a href="{% url 'post_delete' post.id %}">Удалить пост</a>
+{% endif %}
+<p>Дата создания: {{post.created_at}}</p>
+<p>{{post.content}}</p>
+<p>Лайки: {{post.likes.count}}</p>
+<a href="{% url 'like_post' post.id %}">
+  {% if user in post.likes.all %}
+  Убрать лайк
+  {% else %}
+  Поставить лайк
   {% endif %}
-  <form method="post" action="{% url 'vote_post' post.id %}">
-    {% csrf_token %}
-    {% for option in answer_options %}
-      <p>Кол-во голосов: {{option.votes}}</p>
-      <input type="radio" name="answer_option" value="{{option.id}}">{{ option.text }}
-    {% endfor %}
-    <button type="submit">Проголосовать</button>
-  </form>
-</body>
+</a>
+<h3>Комментарии:</h3>
+<ul>
+  {% for comment in comments %}
+  <li>
+    <strong>{{comment.user.username}}</strong>: {{comment.content}} ({{comment.created_at}})
+    {% if comment.user == request.user %}
+    <a href="{% url 'edit_comment' comment.id %}">Редактировать комментарий</a>
+    <a href="{% url 'delete_comment' comment.id %}">Удалить комментарий</a>
+    {% endif %}
+  </li>
+  {% empty %}
+    <li>Комментариев еще нет</li>
+  {% endfor %}
+</ul>
+
+{% if user.is_authenticated %}
+<form method="post">
+  {% csrf_token %}
+  <textarea name="content" required></textarea>
+  <button type="submit">Оставить комментарий</button>
+</form>
+{% else %}
+  <p>Вам необходимо <a href="{% url 'login' %}">Войти</a> что бы оставить комментарий</p>
+{% endif %}
 {% endblock %}
-</html>

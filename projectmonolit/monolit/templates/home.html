@@ -4,11 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <title>Title</title>
+    <title>Блог</title>
 </head>
 <body>
     <header>
-        <h1><a href="{% url 'home' %}">Сайт</a></h1>
+        <h1><a href="{% url 'home' %}">Блог</a></h1>
+        <p><a href="{% url 'post_list' %}">Список постов</a></p>
         <div class="profile">
             {% if user.username %}
             <a href="{% url 'profile' %}" style="display: flex; align-items: center;">{{user.username}}{% if profile.avatar %}<img src="{{profile.avatar.url}}" alt="" style="width: 50px;">{% endif %}</a>
@@ -18,14 +19,8 @@
         </div>
     </header>
     <main>
-        <a href="{% url 'post_list' %}" class="a-button">Список постов</a>
         {% block content %}
         {% endblock %}
-        {% if messages %}
-            {% for message in messages %}
-                <p>{{message}}</p>
-            {% endfor %}
-        {% endif %}
     </main>
 </body>
 </html>

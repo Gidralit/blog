@@ -1,18 +1,13 @@
-{% extends 'home.html' %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
+{% extends "home.html" %}
 {% block content %}
-<body>
-  <h1>Список постов</h1>
-  <a href="{% url 'create_post' %}" class="a-button">Создать свой пост</a>
-  {% for post in posts %}
-    <h2><a href="{% url 'post_detail' post.id %}">{{ post.title }}</a></h2>
-    <p>{{ post.description }}</p>
-  {% endfor %}
-</body>
+{% if posts %}
+    {% for post in posts %}
+        <a href="{% url 'post_detail' post.id %}"><h2>{{post.title}}</h2></a>
+        <p>Кол-во лайков: {{post.likes.count}}</p>
+        <p>Автор поста: {{post.user.username}}</p>
+    {% endfor %}
+{% else %}
+<p>Постов пока нету</p>
+{% endif %}
+<a href="{% url 'create_post' %}">Создать свой пост</a>
 {% endblock %}
-</html>

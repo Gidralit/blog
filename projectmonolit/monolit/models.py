@@ -10,37 +10,28 @@ from django.utils import timezone
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     avatar = models.ImageField(upload_to='profile_pictures', blank=True, null=True)
+    bio = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.user.username
 
 class Post(models.Model):
-    title = models.CharField(max_length=255)
-    description = models.TextField()
-    image = models.ImageField(upload_to='image_question/', blank=True, null=True)
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=200)
+    content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    valid_duration = models.PositiveIntegerField(default=1)
-
-    def is_expired(self):
-        return timezone.now() > (self.created_at + timedelta(days=self.valid_duration))
+    likes = models.ManyToManyField(User, related_name='likes', blank=True)
+    comment_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.title
-class AnswerOption(models.Model):
-    post = models.ForeignKey(Post, related_name='answer_options', on_delete=models.CASCADE)
-    text = models.CharField(max_length=255)
-    votes = models.PositiveIntegerField(default=0)
+
+class Comment(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.text
-
-class Vote(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    answer_option = models.ForeignKey(AnswerOption, on_delete=models.CASCADE)
-    post = models.ForeignKey(Post, related_name='votes', on_delete=models.CASCADE)
-
-    class Meta:
-        unique_together = ('user', 'post')
-
+        return f'Коммент оставлен {self.user.username} в посте {self.post.title}'
 # Create your models here.

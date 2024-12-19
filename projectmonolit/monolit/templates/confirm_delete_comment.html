@@ -1,0 +1,10 @@
+{% extends 'home.html' %}
+{% block content %}
+<h1>Подтверждение удаления комментария</h1>
+<p>Вы уверены что хотите удалить комментарий {{comment.title}}?</p>
+<form method="post">
+  {% csrf_token %}
+  <button type="submit">Удалить</button>
+  <a href="{% url 'post_list' %}">Отмена</a>
+</form>
+{% endblock %}

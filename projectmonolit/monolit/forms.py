@@ -6,7 +6,8 @@ from django.core.exceptions import ValidationError
 from django.forms import modelformset_factory
 from pyexpat.errors import messages
 
-from .models import Profile, Post, AnswerOption
+from .models import Profile, Post, Comment
+
 
 class RegistrationForm(forms.ModelForm):
     password1 = forms.CharField(widget=forms.PasswordInput, label="Пароль")
@@ -37,9 +38,10 @@ class RegistrationForm(forms.ModelForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['avatar']
-        labels ={
-            'avatar': 'Фотография профиля'
+        fields = ['avatar', 'bio']
+        labels = {
+            'avatar': 'Фотография профиля',
+            'bio': 'Описание профиля',
         }
 
 class UserUpdate(forms.ModelForm):
@@ -62,20 +64,27 @@ class UserUpdate(forms.ModelForm):
 class ProfileUpdate(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['avatar']
+        fields = ['avatar', 'bio']
         labels = {
-            'avatar': 'Фотография профиля'
+            'avatar': 'Фотография профиля',
+            'bio': 'Описание профиля',
         }
 
 class PostForm(forms.ModelForm):
     class Meta:
         model = Post
-        fields = ['title', 'description', 'image', 'valid_duration']
+        fields = ['title', 'content']
 
-class AnswerOptionForm(forms.ModelForm):
+class CommentForm(forms.ModelForm):
     class Meta:
-        model = AnswerOption
-        fields = ['text']
+        model = Comment
+        fields = ['content']
+        widgets = {
+            'content': forms.Textarea(attrs={
+                'placeholder': 'Ваш комментарий...',
+                'rows': 4,
+                'cols': 40,
+            })
+        }
 
-AnswerOptionFormSet = modelformset_factory(AnswerOption, form=AnswerOptionForm, extra=3)
 

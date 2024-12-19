@@ -32,6 +32,8 @@
                 Фотография отсутствует
             {% endif %}
             </h2>
+            <h2>Описание профиля: </h2>
+            <p>{% if profile.bio %}{{profile.bio}}{% else %}Описание отсутствует{% endif %}</p>
             <a href="{% url 'logout' %}" class="a-button">Выйти из аккаунта</a>
         </div>
 

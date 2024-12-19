@@ -4,17 +4,22 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
+from django.template.defaulttags import comment
 from prompt_toolkit.validation import ValidationError
 
-from .forms import ProfileForm, RegistrationForm, UserUpdate, ProfileUpdate, PostForm, AnswerOptionFormSet
-from .models import Profile, Post, Vote, AnswerOption
+from .forms import ProfileForm, RegistrationForm, UserUpdate, ProfileUpdate, PostForm, CommentForm
+from .models import Profile, Post, Comment
 
 
 def home_view(request):
     if request.user.is_authenticated:
         return render(request, 'home.html', {'profile': request.user.profile})
     else:
-        return render(request, 'home.html')
+        return render(request, 'home.html', )
+
+def post_list(request):
+    posts = Post.objects.all()
+    return render(request, 'post_list.html', {'posts': posts})
 
 def register_view(request):
     if request.method == "POST":
@@ -85,57 +90,97 @@ def delete_account(request):
 
     return render(request, 'deleteaccount.html')
 
-# Create your views here.
-
-def post_list(request):
-    posts = Post.objects.all()
-    return render(request, 'post_list.html', {'posts': posts})
-
 @login_required
 def create_post(request):
     if request.method == 'POST':
-        post_form = PostForm(request.POST, request.FILES)
-        answer_formset = AnswerOptionFormSet(request.POST)
-        if post_form.is_valid() and answer_formset.is_valid():
-            post = post_form.save(commit=False)
-            post.author = request.user
+        form = PostForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.user = request.user
             post.save()
-            for answer_form in answer_formset:
-                answer_option = answer_form.save(commit=False)
-                answer_option.post = post
-                answer_option.save()
+            return redirect('post_list')
+    else:
+        form = PostForm()
+    return render(request, 'create_post.html', {'form': form})
+
+@login_required
+def edit_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+
+    if request.user != post.user:
+        return redirect('post_list')
+
+    if request.method == "POST":
+        form = PostForm(request.POST, instance = post)
+        if form.is_valid():
+            form.save()
             return redirect('post_detail', post_id=post.id)
     else:
-        post_form = PostForm()
-        answer_formset = AnswerOptionFormSet(queryset=AnswerOption.objects.none())
-    return render(request, 'create_post.html', {'post_form': post_form, 'answer_formset': answer_formset})
+        form = PostForm(instance = post)
+    return render(request, 'edit_post.html', {'form': form, 'post': post})
 
 @login_required
+def edit_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    if request.user != comment.user:
+        return redirect('post_detail', post_id=comment.post.id)
+
+    if request.method == "POST":
+        form = CommentForm(request.POST, instance = comment)
+        if form.is_valid():
+            form.save()
+            return redirect('post_detail', post_id=comment.post.id)
+    else:
+        form = CommentForm(instance=comment)
+
+    return render(request, 'edit_comment.html', {'form': form, 'comment': comment})
+
+def delete_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+
+    if request.user != comment.user:
+        return redirect('post_detail', post_id=comment.post.id)
+
+    if request.method == 'POST':
+        comment.delete()
+        return redirect('post_detail', post_id=comment.post.id)
+
+    return render(request, 'confirm_delete_comment.html', {'comment': comment})
+
+
+@login_required
+def like_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    if request.user in post.likes.all():
+        post.likes.remove(request.user)
+    else:
+        post.likes.add(request.user)
+    return redirect('post_detail',  post_id = post_id)
+
 def post_detail(request, post_id):
-    user = request.user
-    if not user:
-        messages.error(request, 'Сначала войдите в систему, что бы голосовать')
-        return redirect('home')
     post = get_object_or_404(Post, id=post_id)
-    print(post)
-    answer_options = post.answer_options.all()
-    print(answer_options)
-    return render(request, 'post_detail.html', {'post': post, 'answer_options': answer_options})
+    comments = post.comments.all()
 
-@login_required
-def vote_post(request, post_id):
+    if request.method == "POST":
+        content = request.POST.get('content')
+        comment = Comment.objects.create(post=post, user=request.user, content = content)
+        post.comment_count += 1
+        post.save()
+        return redirect('post_detail', post_id=post.id)
+
+    return render(request, 'post_detail.html', {
+        'post': post,
+        'comments': comments,
+    })
+
+def post_delete(request, post_id):
     post = get_object_or_404(Post, id=post_id)
-    if request.method =='POST':
-        selected_option_id = request.POST.get('answer_option')
-        selected_option = get_object_or_404(AnswerOption, id=selected_option_id, post=post)
 
-        votes, created = Vote.objects.get_or_create(user = request.user, post=post, defaults={'answer_option': selected_option})
-        if created:
-            selected_option.votes += 1
-            selected_option.save()
-            return redirect('post_detail', post_id=post.id)
-        else:
-            messages.error(request, 'вы уже проголосовали за этот пост')
-            return redirect('post_detail', post_id = post.id)
+    if request.user != post.user:
+        return redirect('post_detail', post_id=post.id)
 
-    return redirect('post_detail', post_id=post.id)
+    if request.method == "POST":
+        post.delete()
+        return redirect('post_list')
+
+    return render(request, 'confirm_delete_post.html', {'post': post})
